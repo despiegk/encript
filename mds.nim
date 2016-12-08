@@ -41,11 +41,8 @@ proc calculateMD5Incremental(filename: string) : string =
             var data = newMultipartData()
             data["path"] = (hash, "text/html", hash)
             var output = client.postContent("http://127.0.0.1:5001/api/v0/add", multipart=data)
-            echo "------------------------------------"
             var hashb = parseJson(output)["Hash"]
             chunkmap[$d2] = $hashb
-            echo hash
-            echo hashb
             bytesRead = f.readBuffer(buffer.addr, blockSize)
         md5Final(c1, d1)
 
