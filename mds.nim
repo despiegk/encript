@@ -4,13 +4,15 @@ import os
 import osproc
 import strutils
 import tables
+import httpclient, json
+import typetraits
 
 var
     chunkmap = initTable[string, string]()
     finalhash = ""
+let client = newHttpClient()
 
 proc calculateMD5Incremental(filename: string) : string =
-
     const blockSize: int = 10 * 1024
     var
         c1: MD5Context
@@ -36,9 +38,14 @@ proc calculateMD5Incremental(filename: string) : string =
             md5Update(c2, buffer, bytesRead)
             md5Final(c2, d2)
             var hash = compress($d2)
-            var output = execProcess("echo '" & hash & "' | ipfs add -n")
-            var hashb = splitWhitespace(output)[8]
+            var data = newMultipartData()
+            data["path"] = (hash, "text/html", hash)
+            var output = client.postContent("http://127.0.0.1:5001/api/v0/add", multipart=data)
+            echo "------------------------------------"
+            var hashb = parseJson(output)["Hash"]
             chunkmap[$d2] = $hashb
+            echo hash
+            echo hashb
             bytesRead = f.readBuffer(buffer.addr, blockSize)
         md5Final(c1, d1)
 
