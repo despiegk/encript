@@ -6,13 +6,14 @@ import strutils
 import tables
 import httpclient, json
 import typetraits
+import pymod
 
 var
     chunkmap = initTable[string, string]()
     finalhash = ""
 let client = newHttpClient()
 
-proc calculateMD5Incremental(filename: string) : string =
+proc calculateMD5Incremental*(filename: string) : string {.exportpy.} =
     const blockSize: int = 10 * 1024
     var
         c1: MD5Context
@@ -61,3 +62,5 @@ if paramCount() > 0:
 else:
     echo("Must pass filename.")
     quit(-1)
+
+initPyModule("encrypt", calculateMD5Incremental)
