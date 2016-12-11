@@ -8,13 +8,13 @@ import httpclient, json
 import typetraits
 import pymod
 
-var
-    chunkmap = initTable[string, string]()
-    finalhash = ""
-let client = newHttpClient()
 
 proc calculateMD5Incremental*(filename: string) : string {.exportpy.} =
-    const blockSize: int = 10 * 1024
+    var
+        hashamap = ""
+        hashbmap = ""
+    let client = newHttpClient()
+    const blockSize: int = 1024 * 1024
     var
         c1: MD5Context
         d1: MD5Digest
@@ -43,24 +43,27 @@ proc calculateMD5Incremental*(filename: string) : string {.exportpy.} =
             data["path"] = (hash, "text/html", hash)
             var output = client.postContent("http://127.0.0.1:5001/api/v0/add", multipart=data)
             var hashb = parseJson(output)["Hash"]
-            chunkmap[$d2] = $hashb
             bytesRead = f.readBuffer(buffer.addr, blockSize)
+            if hashamap == "":
+                hashamap = hashamap & $d2
+                hashbmap = hashbmap & $hashb
+            else:
+                hashamap = hashamap & "," & $d2
+                hashbmap = hashbmap & "," & $hashb
         md5Final(c1, d1)
-
     except IOError:
         echo("File not found.")
     finally:
         if f != nil:
-            close(f)
+            f.close()
+    let hashes = "$#&$#&$#" % [hashamap, hashbmap, $d1]
+    return hashes
 
-    finalhash = $d1
-
-if paramCount() > 0:
-    let arguments = commandLineParams()
-    echo("MD5: ", calculateMD5Incremental(arguments[0]))
-    echo finalhash
-else:
-    echo("Must pass filename.")
-    quit(-1)
+# if paramCount() > 0:
+#     let arguments = commandLineParams()
+#     echo("MD5: ", calculateMD5Incremental(arguments[0]))
+# else:
+#     echo("Must pass filename.")
+#     quit(-1)
 
 initPyModule("encrypt", calculateMD5Incremental)
